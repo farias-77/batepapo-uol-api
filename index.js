@@ -21,17 +21,37 @@ server.use(express.json());
 
 server.post('/participants', (req, res) => {
     
+    //valida nome pelo JOI
     const { error } = authSchema.validate({name : req.body.name});
+
+    //validate retorna erro caso o nome esteja vazio
     if(Joi.isError(error)){
-        res.status(422);
+        res.status(422).send('O nome não pode ficar em branco');
         return;
+    
     }else{
-        //db.collection('participants').insertOne({name: req.body.name});
-        db.collection('participants').findOne({name: re1.body.name}).then((p) => {
+        //busca nome inserido na coleção de participantes (retorna objeto com o nome ou null)
+        db.collection('participants').findOne({name: req.body.name}).then((p) => {
+
+            //se o retorno for um objeto com o nome 
+            if(p){
+                res.status(409).send('este nome já está sendo utilizado');
             
+            //se o retorno for null
+            }else{
+                db.collection('participants').insertOne({name: req.body.name});         //insere participante
+                res.status(201).send("participante inserido");                          
+            }
         })
     }
 })
+
+server.get('/participants', (req, res) => {
+    db.collection("participants").find().toArray().then(p => {
+		res.send(p); 
+	});
+});
+
 
 
 
