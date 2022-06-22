@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import Joi from 'joi';
+import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 const authSchema = Joi.object({
@@ -19,36 +21,50 @@ const server = express();
 server.use(cors());
 server.use(express.json());
 
-server.post('/participants', (req, res) => {
+server.post('/participants', (request, response) => {
     
     //valida nome pelo JOI
-    const { error } = authSchema.validate({name : req.body.name});
+    const { error } = authSchema.validate({name : request.body.name});
 
     //validate retorna erro caso o nome esteja vazio
     if(Joi.isError(error)){
-        res.status(422).send('O nome não pode ficar em branco');
+        response.status(422).send('O nome não pode ficar em branco');
         return;
     
     }else{
         //busca nome inserido na coleção de participantes (retorna objeto com o nome ou null)
-        db.collection('participants').findOne({name: req.body.name}).then((p) => {
+        db.collection('participants').findOne({name: request.body.name}).then((p) => {
 
             //se o retorno for um objeto com o nome 
             if(p){
-                res.status(409).send('este nome já está sendo utilizado');
+                response.status(409).send('este nome já está sendo utilizado');
             
             //se o retorno for null
             }else{
-                db.collection('participants').insertOne({name: req.body.name});         //insere participante
-                res.status(201).send("participante inserido");                          
+                //salva participante no mongodb
+                db.collection('participants').insertOne({name: request.body.name});             
+                
+                //salva mensagem 'entra na sala'
+                const currentTime = dayjs().format('HH:MM:ss');
+                
+                 db.collection('messages').insertOne({
+                     from: request.body.name,
+                     to: 'Todos',
+                     text: 'entra na sala...',
+                     type: 'status',
+                     time: currentTime
+                });
+                           
+                response.status(201).send('participante inserido');                          
             }
         })
     }
 })
 
-server.get('/participants', (req, res) => {
+server.get('/participants', (request, response) => {     
+   
     db.collection("participants").find().toArray().then(p => {
-		res.send(p); 
+		response.send(p); 
 	});
 });
 
