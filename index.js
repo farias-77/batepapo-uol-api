@@ -6,6 +6,7 @@ import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 dotenv.config();
 
+
 const server = express();
 server.use(cors());
 server.use(express.json());
@@ -15,7 +16,6 @@ let db;
 client.connect().then(() => {
     db = client.db('bate-papoUOL');
 });
-
 
 
 server.post('/participants', (request, response) => {
@@ -81,7 +81,7 @@ server.post('/messages', (request, response) => {
     const { to, text, type } = request.body;
     const from = request.headers.user;
 
-    //verifica erro
+    //verifica erro na mensagem
     const { errorMessage } = messageAuth.validate({ to: to, text: text, type: type, from: from });
     if(Joi.isError(errorMessage)){
         response.status(422).send();
@@ -89,8 +89,24 @@ server.post('/messages', (request, response) => {
         db.collection('messages').insertOne({from, to, text, type, time: returnCurrentTime()});
         response.status(201).send();
     }
+});
 
-    response.send('ok')
+server.get('/messages', async (request, response) => {
+    
+    const user = request.headers.user;
+    let limit = request.query.limit;
+    let messages = await db.collection('messages').find().toArray();
+    
+    if(typeof limit === 'undefined'){
+        response.send(messages);
+    }else{
+        limit = parseInt(limit)  
+        
+        messages = messages.filter((m, index) => index >= messages.length-limit);
+        messages = messages.filter((m) => m.type === 'message' || m.from === user || m.to === user || m.to === 'Todos');
+
+        response.send(messages);
+    }
 });
 
 
