@@ -4,12 +4,11 @@ import Joi from 'joi';
 import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
-
 dotenv.config();
 
-const authSchema = Joi.object({
-    name: Joi.string().min(1).required(),
-})
+const server = express();
+server.use(cors());
+server.use(express.json());
 
 const client = new MongoClient(process.env.MONGO_URI);
 let db;
@@ -17,14 +16,24 @@ client.connect().then(() => {
     db = client.db('bate-papoUOL');
 });
 
-const server = express();
-server.use(cors());
-server.use(express.json());
+const nameAuth = Joi.object({
+    name: Joi.string().min(1).required()
+});
+
+const messageAuth = Joi.object({
+    to: Joi.string().min(1).required(),
+    text: Joi.string().min(1).required(),
+    type: Joi.string().valid('message', 'private_message')
+});
+
+const fromAuth = Joi.object({
+    //from: Joi.string().valid(db.collection('participants').find().toArray())
+})
 
 server.post('/participants', (request, response) => {
     
     //valida nome pelo JOI
-    const { error } = authSchema.validate({name : request.body.name});
+    const { error } = nameAuth.validate({name : request.body.name});
 
     //validate retorna erro caso o nome esteja vazio
     if(Joi.isError(error)){
@@ -45,8 +54,7 @@ server.post('/participants', (request, response) => {
                 db.collection('participants').insertOne({name: request.body.name, lastStatus: Date.now()});             
                 
                 //salva mensagem 'entra na sala'
-                const currentTime = dayjs().format('hh:mm:ss');
-                
+                const currentTime = returnCurrentTime();          
                  db.collection('messages').insertOne({
                      from: request.body.name,
                      to: 'Todos',
@@ -59,7 +67,7 @@ server.post('/participants', (request, response) => {
             }
         })
     }
-})
+});
 
 server.get('/participants', async(request, response) => {     
    
@@ -67,7 +75,26 @@ server.get('/participants', async(request, response) => {
     response.send(participants);
 });
 
+server.post('/messages', (request, response) => {
+    const { to, text, type } = request.body;
+    const from = request.headers.user;
+
+    const { error } = messageAuth.validate({ to: to, text: text, type: type })
+    if(Joi.isError(error)){
+        console.log('deu ruim')
+    }else{
+        console.log('certin meu patrao')
+    }
 
 
+    response.send('ok')
+});
+
+
+
+
+function returnCurrentTime(){
+    return dayjs().format('hh:mm:ss');
+}
 
 server.listen(5000);
