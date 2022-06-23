@@ -61,19 +61,12 @@ server.post('/participants', (request, response) => {
     }
 })
 
-//auxiliar
-server.get('/participants', (request, response) => {     
+server.get('/participants', async(request, response) => {     
    
-    db.collection('participants').find().toArray().then(p => {
-		response.send(p); 
-	});
+    const participants = await db.collection('participants').find().toArray();
+    response.send(participants);
 });
-server.get('/messages', (request, response) => {     
-    db.collection('messages').find().toArray().then(p => {
-		response.send(p); 
-	});
-});
-//fim auxiliar
+
 
 
 
