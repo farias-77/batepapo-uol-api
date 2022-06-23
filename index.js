@@ -16,21 +16,14 @@ client.connect().then(() => {
     db = client.db('bate-papoUOL');
 });
 
-const nameAuth = Joi.object({
-    name: Joi.string().min(1).required()
-});
 
-const messageAuth = Joi.object({
-    to: Joi.string().min(1).required(),
-    text: Joi.string().min(1).required(),
-    type: Joi.string().valid('message', 'private_message')
-});
-
-const fromAuth = Joi.object({
-    //from: Joi.string().valid(db.collection('participants').find().toArray())
-})
 
 server.post('/participants', (request, response) => {
+    
+    //critério de validação do nome
+    const nameAuth = Joi.object({
+        name: Joi.string().min(1).required()
+    });
     
     //valida nome pelo JOI
     const { error } = nameAuth.validate({name : request.body.name});
@@ -70,22 +63,32 @@ server.post('/participants', (request, response) => {
 });
 
 server.get('/participants', async(request, response) => {     
-   
     const participants = await db.collection('participants').find().toArray();
     response.send(participants);
 });
 
 server.post('/messages', (request, response) => {
+    
+    //critério de validação de mensagem
+    const messageAuth = Joi.object({
+        to: Joi.string().min(1).required(),
+        text: Joi.string().min(1).required(),
+        type: Joi.string().valid('message', 'private_message'),
+        from: Joi.string().valid(db.collection('participants').find()),
+    });
+    
+    //captura infos da request
     const { to, text, type } = request.body;
     const from = request.headers.user;
 
-    const { error } = messageAuth.validate({ to: to, text: text, type: type })
-    if(Joi.isError(error)){
-        console.log('deu ruim')
+    //verifica erro
+    const { errorMessage } = messageAuth.validate({ to: to, text: text, type: type, from: from });
+    if(Joi.isError(errorMessage)){
+        response.status(422).send();
     }else{
-        console.log('certin meu patrao')
+        db.collection('messages').insertOne({from, to, text, type, time: returnCurrentTime()});
+        response.status(201).send();
     }
-
 
     response.send('ok')
 });
