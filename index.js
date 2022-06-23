@@ -42,10 +42,10 @@ server.post('/participants', (request, response) => {
             //se o retorno for null
             }else{
                 //salva participante no mongodb
-                db.collection('participants').insertOne({name: request.body.name});             
+                db.collection('participants').insertOne({name: request.body.name, lastStatus: Date.now()});             
                 
                 //salva mensagem 'entra na sala'
-                const currentTime = dayjs().format('HH:MM:ss');
+                const currentTime = dayjs().format('hh:mm:ss');
                 
                  db.collection('messages').insertOne({
                      from: request.body.name,
@@ -54,21 +54,26 @@ server.post('/participants', (request, response) => {
                      type: 'status',
                      time: currentTime
                 });
-                           
-                response.status(201).send('participante inserido');                          
+
+                response.status(201).send('participante inserido');                      
             }
         })
     }
 })
 
+//auxiliar
 server.get('/participants', (request, response) => {     
    
-    db.collection("participants").find().toArray().then(p => {
+    db.collection('participants').find().toArray().then(p => {
 		response.send(p); 
 	});
 });
-
-
+server.get('/messages', (request, response) => {     
+    db.collection('messages').find().toArray().then(p => {
+		response.send(p); 
+	});
+});
+//fim auxiliar
 
 
 
