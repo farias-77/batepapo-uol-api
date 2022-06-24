@@ -109,6 +109,19 @@ server.get('/messages', async (request, response) => {
     }
 });
 
+server.post('/status', async (request, response) => {
+    const user = await db.collection('participants').find({ name: request.headers.user}).toArray();
+    
+    if(user.length === 0){
+        response.status(404).send();
+    }else{
+        await db.collection('participants').updateOne({
+            name: request.headers.user
+        }, { $set: {lastStatus: Date.now()}});
+        response.status(200).send();
+    }
+});
+
 
 
 
