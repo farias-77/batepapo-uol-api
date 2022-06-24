@@ -5,9 +5,9 @@ import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 dotenv.config();
+
 const _15SECONDS = 15000;
 const _10SECONDS = 10000;
-
 
 const server = express();
 server.use(cors());
@@ -138,8 +138,6 @@ setInterval(async () => {
         });
     }); 
 }, _15SECONDS);
-
-
 
 function returnCurrentTime(){
     return dayjs().format('hh:mm:ss');
