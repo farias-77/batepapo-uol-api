@@ -5,6 +5,8 @@ import dayjs from 'dayjs';
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 dotenv.config();
+const _15SECONDS = 15000;
+const _10SECONDS = 10000;
 
 
 const server = express();
@@ -122,6 +124,20 @@ server.post('/status', async (request, response) => {
     }
 });
 
+setInterval(async () => {
+    let participantsToRemove = await db.collection('participants').find().toArray();
+    participantsToRemove = participantsToRemove.filter(participant => Date.now() - participant.lastStatus > _10SECONDS)
+    participantsToRemove = participantsToRemove.map((participant) => {       
+        db.collection('participants').deleteOne({ name: participant.name});
+        db.collection('messages').insertOne({
+            from: participant.name,
+            to: 'Todos',
+            text: 'sai da sala...',
+            type: 'status',
+            time: returnCurrentTime()
+        });
+    }); 
+}, _15SECONDS);
 
 
 
